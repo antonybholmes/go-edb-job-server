@@ -12,12 +12,8 @@ import (
 
 	"github.com/antonybholmes/go-jobs"
 	awsjobs "github.com/antonybholmes/go-jobs/aws"
-	awsmail "github.com/antonybholmes/go-mail/aws"
 	"github.com/antonybholmes/go-sys/log"
-	"github.com/antonybholmes/go-web/access"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -49,23 +45,23 @@ func run(cfg *config.AppConfig) error {
 
 	}
 
-	sqsClient := sqs.NewFromConfig(awsCfg)
+	//sqsClient := sqs.NewFromConfig(awsCfg)
 
-	mailer := awsmail.NewSQSEmailQueue(sqsClient, cfg.AWS.SQS.Email.QueueURL)
+	//mailer := awsmail.NewSQSEmailQueue(sqsClient, cfg.AWS.SQS.Email.QueueURL)
 
-	store := &PostgresStore{Config: cfg, pool: pool, EmailSender: mailer}
-	sender := awsjobs.NewSQSSender(sqsClient, cfg.AWS.SQS.Jobs.QueueURL)
+	// store := &PostgresStore{Config: cfg, pool: pool, EmailSender: mailer}
+	// sender := awsjobs.NewSQSSender(sqsClient, cfg.AWS.SQS.Jobs.QueueURL)
 
-	handler := &SubmitHandler{
-		Config:      cfg,
-		bucket:      cfg.AWS.Bucket,
-		maxBody:     cfg.App.MaxBodyBytes,
-		objectStore: &S3Store{client: s3.NewFromConfig(awsCfg)},
-		jobStore:    store,
-	}
+	// handler := &SubmitHandler{
+	// 	Config:      cfg,
+	// 	bucket:      cfg.AWS.Bucket,
+	// 	maxBody:     cfg.App.MaxBodyBytes,
+	// 	objectStore: &S3Store{client: s3.NewFromConfig(awsCfg)},
+	// 	jobStore:    store,
+	// }
 
-	re := access.NewRuleEngine()
-	re.LoadRules("config/access-rules.json")
+	// re := access.NewRuleEngine()
+	// re.LoadRules("config/access-rules.json")
 
 	//claimsParser := middleware.NewUserJWTParser(middleware.NewJwtClaimsES256Parser(cfg.Auth.Keys.JwtES256PublicKey))
 	//jwtUserMiddleWare := middleware.UserJWTMiddleware(claimsParser)

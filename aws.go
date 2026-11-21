@@ -18,8 +18,11 @@ type (
 
 func (s *S3Store) Upload(ctx context.Context, j jobs.Job, body io.ReadSeeker) error {
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(j.Bucket), Key: aws.String(j.Key), Body: body,
-		ContentLength: aws.Int64(j.Size), ContentType: aws.String(j.ContentType),
+		Bucket:        aws.String(j.Bucket),
+		Key:           aws.String(j.Key),
+		Body:          body,
+		ContentLength: aws.Int64(j.Size),
+		ContentType:   aws.String(j.ContentType),
 	})
 	if err != nil {
 		return fmt.Errorf("put S3 object: %w", err)

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/antonybholmes/go-sys/jobs"
+	"github.com/antonybholmes/go-jobs"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
