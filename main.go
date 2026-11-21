@@ -7,18 +7,18 @@ import (
 	"go-edb-job-server/config"
 
 	"os"
+	"sync"
 	"time"
 
+	"github.com/antonybholmes/go-jobs"
+	awsjobs "github.com/antonybholmes/go-jobs/aws"
 	awsmail "github.com/antonybholmes/go-mail/aws"
 	"github.com/antonybholmes/go-sys/log"
 	"github.com/antonybholmes/go-web/access"
-	"github.com/antonybholmes/go-web/middleware"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/bytedance/gopkg/util/logger"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -54,7 +54,7 @@ func run(cfg *config.AppConfig) error {
 	mailer := awsmail.NewSQSEmailQueue(sqsClient, cfg.AWS.SQS.Email.QueueURL)
 
 	store := &PostgresStore{Config: cfg, pool: pool, EmailSender: mailer}
-	sender := awsmail.NewSQSSender(sqsClient, cfg.AWS.SQS.Jobs.QueueURL)
+	sender := awsjobs.NewSQSSender(sqsClient, cfg.AWS.SQS.Jobs.QueueURL)
 
 	handler := &SubmitHandler{
 		Config:      cfg,
@@ -67,41 +67,44 @@ func run(cfg *config.AppConfig) error {
 	re := access.NewRuleEngine()
 	re.LoadRules("config/access-rules.json")
 
-	claimsParser := middleware.NewUserJWTParser(middleware.NewJwtClaimsES256Parser(cfg.Auth.Keys.JwtES256PublicKey))
+	//claimsParser := middleware.NewUserJWTParser(middleware.NewJwtClaimsES256Parser(cfg.Auth.Keys.JwtES256PublicKey))
 	//jwtUserMiddleWare := middleware.UserJWTMiddleware(claimsParser)
-	rulesMiddleware := middleware.AccessTokenRulesMiddleware(claimsParser, re)
+	//rulesMiddleware := middleware.AccessTokenRulesMiddleware(claimsParser, re)
 
-	router := gin.New()
-	router.SetTrustedProxies(cfg.App.TrustedProxies)
+	// router := gin.New()
+	// router.SetTrustedProxies(cfg.App.TrustedProxies)
 
-	//router.Use(gin.Logger(), gin.Recovery())
+	// //router.Use(gin.Logger(), gin.Recovery())
 
-	corsConfig := cors.Config{
-		AllowOrigins:     cfg.Cors.AllowOrigins,
-		AllowMethods:     cfg.Cors.AllowMethods,
-		AllowHeaders:     cfg.Cors.AllowHeaders,
-		AllowCredentials: cfg.Cors.AllowCredentials,
-		MaxAge:           time.Duration(cfg.Cors.MaxAge) * time.Second,
-	}
+	// corsConfig := cors.Config{
+	// 	AllowOrigins:     cfg.Cors.AllowOrigins,
+	// 	AllowMethods:     cfg.Cors.AllowMethods,
+	// 	AllowHeaders:     cfg.Cors.AllowHeaders,
+	// 	AllowCredentials: cfg.Cors.AllowCredentials,
+	// 	MaxAge:           time.Duration(cfg.Cors.MaxAge) * time.Second,
+	// }
 
-	router.Use(cors.New(corsConfig))                // Check CORS first
-	router.Use(middleware.ErrorHandlerMiddleware()) // Handle errors early
+	// router.Use(cors.New(corsConfig))                // Check CORS first
+	// router.Use(middleware.ErrorHandlerMiddleware()) // Handle errors early
 
-	router.MaxMultipartMemory = cfg.App.MaxBodyBytes // 8 << 20
+	// router.MaxMultipartMemory = cfg.App.MaxBodyBytes // 8 << 20
 
-	v1 := router.Group("/v1")
+	// v1 := router.Group("/v1")
 
-	crispr := v1.Group("/crispr", rulesMiddleware)
-	crispr.POST("/submit", handler.Submit)
+	// crispr := v1.Group("/crispr", rulesMiddleware)
+	// crispr.POST("/submit", handler.Submit)
 
-	// The outbox runs alongside HTTP so it can publish accepted jobs to SQS.
-	go runOutbox(ctx, store, sender, time.Duration(cfg.App.PollIntervalSec)*time.Second)
+	// // The outbox runs alongside HTTP so it can publish accepted jobs to SQS.
+	// go runOutbox(ctx, store, sender, time.Duration(cfg.App.PollIntervalSec)*time.Second)
 
-	logger.Info("server starting", "address", cfg.App.Port)
+	// logger.Info("server starting", "address", cfg.App.Port)
 
-	if err := router.Run(cfg.App.Port); err != nil {
-		return fmt.Errorf("serve HTTP: %w", err)
-	}
+	// if err := router.Run(cfg.App.Port); err != nil {
+	// 	return fmt.Errorf("serve HTTP: %w", err)
+	// }
+	// The code below will never be reached because router.Run is blocking
+	//return nil
+
 	return nil
 }
 
@@ -139,4 +142,27 @@ func main() {
 		logger.Error("application stopped", "error", err)
 		os.Exit(1)
 	}
+
+	sqsConsumer, err := awsjobs.NewSQSConsumer(cfg.AWS.SQS.Jobs.Submitted.QueueURL,
+		cfg.AWS.SQS.Threads,
+		cfg.AWS.SQS.WaitTimeSecs)
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create email consumer")
+	}
+
+	ctx := context.Background()
+
+	var consumer = awsjobs.NewSQSJobConsumer(sqsConsumer)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		consumer.Consume(ctx, func(ctx context.Context, job *jobs.Job) error {
+			// Process the job here
+			return nil
+		})
+	}()
+	wg.Wait()
 }

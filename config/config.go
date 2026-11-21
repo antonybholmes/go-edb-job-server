@@ -24,10 +24,14 @@ type AppConfig struct {
 		SQS    struct {
 			Email struct {
 				QueueURL string `yaml:"-"`
-			} `yaml:"email"`
+			} `yaml:"-"`
 			Jobs struct {
-				QueueURL string `yaml:"-"`
-			} `yaml:"jobs"`
+				Submitted struct {
+					QueueURL string `yaml:"-"`
+				} `yaml:"-"`
+			} `yaml:"-"`
+			Threads      int `yaml:"threads"`
+			WaitTimeSecs int `yaml:"waitTimeSecs"`
 		} `yaml:"sqs"`
 	} `yaml:"-"`
 	App struct {
@@ -81,7 +85,7 @@ func LoadConfig() *AppConfig {
 
 	cfg.App.DatabaseURL = envOr("DATABASE_URL", cfg.App.DatabaseURL)
 	cfg.AWS.Bucket = envOr("AWS_BUCKET", cfg.AWS.Bucket)
-	cfg.AWS.SQS.Jobs.QueueURL = envOr("AWS_SQS_JOBS_QUEUE_URL", cfg.AWS.SQS.Jobs.QueueURL)
+	cfg.AWS.SQS.Jobs.Submitted.QueueURL = envOr("AWS_SQS_JOBS_SUBMITTED_QUEUE_URL", cfg.AWS.SQS.Jobs.Submitted.QueueURL)
 	cfg.AWS.SQS.Email.QueueURL = envOr("AWS_SQS_EMAIL_QUEUE_URL", cfg.AWS.SQS.Email.QueueURL)
 
 	//
