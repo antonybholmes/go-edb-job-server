@@ -165,11 +165,11 @@ func main() {
 	// Create the email queue sending emails in addition to handling job submissions
 	submittedEmailQueue := awsmail.NewSQSEmailQueue(sqsClient,
 		appconfig.App.Email.From,
-		appconfig.AWS.SQS.QueueURLs.Email.Submitted)
+		appconfig.AWS.SQS.QueueURLs.Email)
 
 	completedEmailQueue := awsmail.NewSQSEmailQueue(sqsClient,
 		appconfig.App.Email.From,
-		appconfig.AWS.SQS.QueueURLs.Email.Completed)
+		appconfig.AWS.SQS.QueueURLs.Email)
 
 	// Define all the consumers we need for each queue
 

@@ -23,11 +23,8 @@ type AppConfig struct {
 		Bucket string `yaml:"-"`
 		SQS    struct {
 			QueueURLs struct {
-				Email struct {
-					Submitted string `yaml:"-"`
-					Completed string `yaml:"-"`
-				} `yaml:"-"`
-				Jobs struct {
+				Email string `yaml:"-"`
+				Jobs  struct {
 					Submitted string `yaml:"-"`
 					Completed string `yaml:"-"`
 				} `yaml:"-"`
@@ -88,7 +85,7 @@ func LoadConfig() *AppConfig {
 	cfg.App.DatabaseURL = envOr("DATABASE_URL", cfg.App.DatabaseURL)
 	cfg.AWS.Bucket = envOr("AWS_BUCKET", cfg.AWS.Bucket)
 	cfg.AWS.SQS.QueueURLs.Jobs.Submitted = envOr("AWS_SQS_JOBS_SUBMITTED_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Jobs.Submitted)
-	cfg.AWS.SQS.QueueURLs.Email.Submitted = envOr("AWS_SQS_EMAIL_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Email.Submitted)
+	cfg.AWS.SQS.QueueURLs.Email = envOr("AWS_SQS_EMAIL_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Email)
 
 	//
 	// Load EC keys
