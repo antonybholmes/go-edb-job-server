@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go-edb-job-server/config"
+
+	"github.com/antonybholmes/go-edb-job-server/config"
+	"github.com/antonybholmes/go-edb-job-server/handlers"
 
 	"os"
 	"sync"
 	"time"
 
-	"github.com/antonybholmes/go-jobs"
-	awsjobs "github.com/antonybholmes/go-jobs/aws"
 	"github.com/antonybholmes/go-sys/log"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -139,26 +140,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	sqsConsumer, err := awsjobs.NewSQSConsumer(cfg.AWS.SQS.Jobs.Submitted.QueueURL,
-		cfg.AWS.SQS.Threads,
-		cfg.AWS.SQS.WaitTimeSecs)
-
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create email consumer")
-	}
-
 	ctx := context.Background()
 
-	var consumer = awsjobs.NewSQSJobConsumer(sqsConsumer)
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx)
+	if err != nil {
+		log.Fatal().Msgf("load AWS configuration: %v", err)
+	}
+
+	sqsClient := sqs.NewFromConfig(awsCfg)
+
+	// Define all the consumers we need for each queue
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		consumer.Consume(ctx, func(ctx context.Context, job *jobs.Job) error {
-			// Process the job here
-			return nil
-		})
-	}()
+
+	wg.Go(func() {
+		submitJobConsumer := handlers.NewSubmitJobConsumer(cfg)
+		submitJobConsumer.ConsumeJobs(ctx, sqsClient)
+	})
+
 	wg.Wait()
 }

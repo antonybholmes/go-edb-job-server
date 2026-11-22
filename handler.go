@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"errors"
-	"go-edb-job-server/config"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/antonybholmes/go-edb-job-server/config"
 
 	"github.com/antonybholmes/go-jobs"
 	"github.com/antonybholmes/go-sys/log"

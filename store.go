@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go-edb-job-server/config"
+
+	"github.com/antonybholmes/go-edb-job-server/config"
 
 	"github.com/antonybholmes/go-jobs"
 	"github.com/antonybholmes/go-mail"

@@ -1,4 +1,4 @@
-module go-edb-job-server
+module github.com/antonybholmes/go-edb-job-server
 
 go 1.27.4
 
@@ -11,6 +11,8 @@ replace github.com/antonybholmes/go-mail => ../go-mail
 replace github.com/antonybholmes/go-jobs => ../go-jobs
 
 require (
+	github.com/antonybholmes/go-jobs v0.0.0-20261118211635-0c5edc8c80bd
+	github.com/antonybholmes/go-mail v0.0.0-20261120230506-649df8ca9051
 	github.com/antonybholmes/go-sys v0.0.0-20261118211639-408b038a66d6
 	github.com/antonybholmes/go-web v0.0.0-20261118223141-29906fe238ac
 	github.com/aws/aws-sdk-go-v2 v1.48.0
@@ -19,7 +21,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.116.0
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.53.0
 	github.com/bytedance/gopkg v0.1.4
-	github.com/gin-contrib/cors v1.7.11
 	github.com/gin-gonic/gin v1.12.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
@@ -28,8 +29,6 @@ require (
 )
 
 require (
-	github.com/antonybholmes/go-jobs v0.0.0-20261118211635-0c5edc8c80bd // indirect
-	github.com/antonybholmes/go-mail v0.0.0-20261120230506-649df8ca9051 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.27 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.9 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.12 // indirect
