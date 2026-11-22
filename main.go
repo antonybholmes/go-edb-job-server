@@ -181,7 +181,7 @@ func main() {
 		submitJobConsumer.ConsumeJobs(ctx)
 	})
 
-	// Monitor completed job queue
+	// Monitor  job status queue
 	wg.Go(func() {
 		completedJobConsumer := handlers.NewCompletedJobConsumer(appconfig, sqsClient, completedEmailQueue, pool)
 		completedJobConsumer.ConsumeJobs(ctx)
