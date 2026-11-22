@@ -22,12 +22,14 @@ type AppConfig struct {
 		Folder string `yaml:"folder"`
 		Bucket string `yaml:"-"`
 		SQS    struct {
-			Email struct {
-				QueueURL string `yaml:"-"`
-			} `yaml:"-"`
-			Jobs struct {
-				Submitted struct {
-					QueueURL string `yaml:"-"`
+			QueueURLs struct {
+				Email struct {
+					Submitted string `yaml:"-"`
+					Completed string `yaml:"-"`
+				} `yaml:"-"`
+				Jobs struct {
+					Submitted string `yaml:"-"`
+					Completed string `yaml:"-"`
 				} `yaml:"-"`
 			} `yaml:"-"`
 			Threads      int `yaml:"threads"`
@@ -85,8 +87,8 @@ func LoadConfig() *AppConfig {
 
 	cfg.App.DatabaseURL = envOr("DATABASE_URL", cfg.App.DatabaseURL)
 	cfg.AWS.Bucket = envOr("AWS_BUCKET", cfg.AWS.Bucket)
-	cfg.AWS.SQS.Jobs.Submitted.QueueURL = envOr("AWS_SQS_JOBS_SUBMITTED_QUEUE_URL", cfg.AWS.SQS.Jobs.Submitted.QueueURL)
-	cfg.AWS.SQS.Email.QueueURL = envOr("AWS_SQS_EMAIL_QUEUE_URL", cfg.AWS.SQS.Email.QueueURL)
+	cfg.AWS.SQS.QueueURLs.Jobs.Submitted = envOr("AWS_SQS_JOBS_SUBMITTED_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Jobs.Submitted)
+	cfg.AWS.SQS.QueueURLs.Email.Submitted = envOr("AWS_SQS_EMAIL_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Email.Submitted)
 
 	//
 	// Load EC keys

@@ -9,6 +9,7 @@ import (
 	"github.com/antonybholmes/go-edb-job-server/handlers"
 
 	"github.com/antonybholmes/go-jobs"
+	awsmail "github.com/antonybholmes/go-mail/aws"
 
 	"os"
 	"sync"
@@ -133,9 +134,9 @@ func init() {
 }
 
 func main() {
-	cfg := config.Instance()
+	appconfig := config.Instance()
 
-	err := run(cfg)
+	err := run(appconfig)
 
 	if err != nil {
 		logger.Error("application stopped", "error", err)
@@ -151,13 +152,39 @@ func main() {
 
 	sqsClient := sqs.NewFromConfig(awsCfg)
 
+	pool, err := pgxpool.New(ctx, appconfig.App.DatabaseURL)
+	if err != nil {
+		log.Fatal().Msgf("configure PostgreSQL: %v", err)
+	}
+
+	defer pool.Close()
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatal().Msgf("connect to PostgreSQL: %v", err)
+	}
+
+	// Create the email queue sending emails in addition to handling job submissions
+	submittedEmailQueue := awsmail.NewSQSEmailQueue(sqsClient,
+		appconfig.App.Email.From,
+		appconfig.AWS.SQS.QueueURLs.Email.Submitted)
+
+	completedEmailQueue := awsmail.NewSQSEmailQueue(sqsClient,
+		appconfig.App.Email.From,
+		appconfig.AWS.SQS.QueueURLs.Email.Completed)
+
 	// Define all the consumers we need for each queue
 
 	var wg sync.WaitGroup
 
+	// Monitor submitted and completed job queues
 	wg.Go(func() {
-		submitJobConsumer := handlers.NewSubmitJobConsumer(cfg)
-		submitJobConsumer.ConsumeJobs(ctx, sqsClient)
+		submitJobConsumer := handlers.NewSubmittedJobConsumer(appconfig, sqsClient, submittedEmailQueue, pool)
+		submitJobConsumer.ConsumeJobs(ctx)
+	})
+
+	// Monitor completed job queue
+	wg.Go(func() {
+		completedJobConsumer := handlers.NewCompletedJobConsumer(appconfig, sqsClient, completedEmailQueue, pool)
+		completedJobConsumer.ConsumeJobs(ctx)
 	})
 
 	wg.Wait()
