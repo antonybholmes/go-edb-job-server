@@ -36,7 +36,7 @@ func NewCompletedJobConsumer(cfg *config.AppConfig,
 func (c *CompletedJobConsumer) ConsumeJobs(ctx context.Context) error {
 
 	sqsConsumer, err := awsjobs.NewSQSConsumer(c.client,
-		c.config.AWS.SQS.QueueURLs.Jobs.Completed,
+		c.config.AWS.SQS.QueueURLs.Jobs.Status,
 		c.config.AWS.SQS.Threads,
 		c.config.AWS.SQS.WaitTimeSecs,
 	)
@@ -45,15 +45,15 @@ func (c *CompletedJobConsumer) ConsumeJobs(ctx context.Context) error {
 		log.Fatal().Err(err).Msg("Failed to create SQS consumer")
 	}
 
-	consumer := awsjobs.NewSQSJobConsumer(sqsConsumer)
+	consumer := awsjobs.NewSQSJobStatusConsumer(sqsConsumer)
 
 	dbStore := jobs.NewPostgresStore(c.pool, c.emailQueue)
 
-	consumer.Consume(ctx, func(ctx context.Context, job *jobs.Job) error {
+	consumer.Consume(ctx, func(ctx context.Context, job *jobs.JobStatusQueueItem) error {
 		// Process the job here
 
 		// Create job and send email notification if needed
-		err := dbStore.UpdateJobStatus(ctx, job.ID, jobs.JobStatusCompleted)
+		err := dbStore.UpdateJobStatus(ctx, job)
 
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to update job status in database")

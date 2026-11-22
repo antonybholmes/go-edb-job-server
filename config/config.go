@@ -26,7 +26,7 @@ type AppConfig struct {
 				Email string `yaml:"-"`
 				Jobs  struct {
 					Submitted string `yaml:"-"`
-					Completed string `yaml:"-"`
+					Status    string `yaml:"-"`
 				} `yaml:"-"`
 			} `yaml:"-"`
 			Threads      int `yaml:"threads"`
