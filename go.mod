@@ -1,4 +1,4 @@
-module github.com/antonybholmes/go-edb-job-server
+module github.com/antonybholmes/go-edb-jobs-server
 
 go 1.27.4
 

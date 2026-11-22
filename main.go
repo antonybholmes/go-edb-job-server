@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/antonybholmes/go-edb-job-server/config"
-	"github.com/antonybholmes/go-edb-job-server/handlers"
+	"github.com/antonybholmes/go-edb-jobs-server/config"
+	"github.com/antonybholmes/go-edb-jobs-server/handlers"
 
 	"github.com/antonybholmes/go-jobs"
 	awsmail "github.com/antonybholmes/go-mail/aws"

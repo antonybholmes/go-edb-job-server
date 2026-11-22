@@ -3,12 +3,13 @@ package handlers
 import (
 	"context"
 
-	"github.com/antonybholmes/go-edb-job-server/config"
+	"github.com/antonybholmes/go-edb-jobs-server/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/antonybholmes/go-jobs"
 	awsjobs "github.com/antonybholmes/go-jobs/aws"
+	awssys "github.com/antonybholmes/go-sys/aws"
 	"github.com/antonybholmes/go-sys/log"
 )
 
@@ -35,7 +36,7 @@ func NewSubmittedJobConsumer(cfg *config.AppConfig,
 
 func (c *SubmittedJobConsumer) ConsumeJobs(ctx context.Context) error {
 
-	sqsConsumer, err := awsjobs.NewSQSConsumer(c.client,
+	sqsConsumer, err := awssys.NewSQSConsumer(c.client,
 		c.config.AWS.SQS.QueueURLs.Jobs.Submitted,
 		c.config.AWS.SQS.Threads,
 		c.config.AWS.SQS.WaitTimeSecs,
