@@ -8,6 +8,8 @@ import (
 	"github.com/antonybholmes/go-edb-job-server/config"
 	"github.com/antonybholmes/go-edb-job-server/handlers"
 
+	"github.com/antonybholmes/go-jobs"
+
 	"os"
 	"sync"
 	"time"
@@ -41,10 +43,10 @@ func run(cfg *config.AppConfig) error {
 		return fmt.Errorf("connect to PostgreSQL: %w", err)
 	}
 
-	if _, err := pool.Exec(ctx, schema); err != nil {
-		return fmt.Errorf("initialize schema: %w", err)
+	// if _, err := pool.Exec(ctx, schema); err != nil {
+	// 	return fmt.Errorf("initialize schema: %w", err)
 
-	}
+	// }
 
 	//sqsClient := sqs.NewFromConfig(awsCfg)
 
@@ -107,7 +109,7 @@ func run(cfg *config.AppConfig) error {
 
 // runOutbox repeatedly delivers pending messages, polling after an empty queue
 // or an error until its context is canceled.
-func runOutbox(ctx context.Context, store OutboxPublisher, sender MessageSender, interval time.Duration) {
+func runOutbox(ctx context.Context, store jobs.OutboxPublisher, sender jobs.MessageSender, interval time.Duration) {
 	for ctx.Err() == nil {
 		sent, err := store.PublishOne(ctx, sender)
 		if err != nil && ctx.Err() == nil {
