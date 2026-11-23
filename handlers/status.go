@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/antonybholmes/go-edb-jobs-server/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -14,7 +15,7 @@ import (
 )
 
 type (
-	CompletedJobConsumer struct {
+	JobStatusConsumer struct {
 		config     *config.AppConfig
 		client     *sqs.Client
 		emailQueue jobs.MailQueue
@@ -22,11 +23,11 @@ type (
 	}
 )
 
-func NewCompletedJobConsumer(cfg *config.AppConfig,
+func NewJobStatusConsumer(cfg *config.AppConfig,
 	client *sqs.Client,
 	emailQueue jobs.MailQueue,
-	pool *pgxpool.Pool) *CompletedJobConsumer {
-	return &CompletedJobConsumer{
+	pool *pgxpool.Pool) *JobStatusConsumer {
+	return &JobStatusConsumer{
 		config:     cfg,
 		client:     client,
 		emailQueue: emailQueue,
@@ -34,7 +35,7 @@ func NewCompletedJobConsumer(cfg *config.AppConfig,
 	}
 }
 
-func (c *CompletedJobConsumer) ConsumeJobs(ctx context.Context) error {
+func (c *JobStatusConsumer) ConsumeJobs(ctx context.Context) error {
 
 	sqsConsumer, err := awssys.NewSQSConsumer(c.client,
 		c.config.AWS.SQS.QueueURLs.Jobs,
@@ -46,19 +47,36 @@ func (c *CompletedJobConsumer) ConsumeJobs(ctx context.Context) error {
 		log.Fatal().Err(err).Msg("Failed to create SQS consumer")
 	}
 
-	consumer := awsjobs.NewSQSJobStatusConsumer(sqsConsumer)
+	consumer := awsjobs.NewSQSJobConsumer(sqsConsumer)
 
 	dbStore := jobs.NewPostgresStore(c.pool, c.emailQueue)
 
-	consumer.Consume(ctx, func(ctx context.Context, job *jobs.JobStatusQueueItem) error {
+	consumer.Consume(ctx, func(ctx context.Context, qi *jobs.JobQueueItem) error {
 		// Process the job here
 
-		// Create job and send email notification if needed
-		err := dbStore.UpdateJobStatus(ctx, job)
+		log.Debug().Msgf("Processing job queue item: %v, job ID: %v", qi.Type, qi.Job.ID)
 
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to update job status in database")
-			return err
+		switch qi.Type {
+		case jobs.JobQueueItemTypeSubmit:
+			err := dbStore.InsertJob(ctx, qi)
+
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to update job status in database")
+				return err
+			}
+		case jobs.JobQueueItemTypeStatus:
+			// Create job and send email notification if needed
+			err := dbStore.UpdateJobStatus(ctx, qi)
+
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to update job status in database")
+				return err
+			}
+
+		default:
+			log.Error().Msgf("Unknown job queue item type: %s", qi.Type)
+			return fmt.Errorf("unknown job queue item type: %s", qi.Type)
+
 		}
 
 		return nil

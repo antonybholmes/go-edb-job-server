@@ -9,6 +9,7 @@ import (
 
 	"github.com/antonybholmes/go-edb-jobs-server/config"
 	"github.com/antonybholmes/go-edb-jobs-server/handlers"
+	jobforms "github.com/antonybholmes/go-jobs/forms"
 	"github.com/antonybholmes/go-web"
 	"github.com/antonybholmes/go-web/auth/token"
 	"github.com/antonybholmes/go-web/middleware"
@@ -21,9 +22,13 @@ import (
 	"sync"
 	"time"
 
+	awsjobs "github.com/antonybholmes/go-jobs/aws"
 	email "github.com/antonybholmes/go-mail"
+	awssys "github.com/antonybholmes/go-sys/aws"
 	"github.com/antonybholmes/go-sys/log"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -179,24 +184,27 @@ func main() {
 	var wg sync.WaitGroup
 
 	// Monitor submitted and completed job queues
-	wg.Go(func() {
-		submitJobConsumer := handlers.NewSubmittedJobConsumer(appconfig, sqsClient, emailQueue, pool)
-		submitJobConsumer.ConsumeJobs(ctx)
-	})
+	// wg.Go(func() {
+	// 	submitJobConsumer := handlers.NewSubmittedJobConsumer(appconfig, sqsClient, emailQueue, pool)
+	// 	submitJobConsumer.ConsumeJobs(ctx)
+	// })
 
 	// Monitor  job status queue
 	wg.Go(func() {
-		completedJobConsumer := handlers.NewCompletedJobConsumer(appconfig, sqsClient, emailQueue, pool)
+		completedJobConsumer := handlers.NewJobStatusConsumer(appconfig, sqsClient, emailQueue, pool)
 		completedJobConsumer.ConsumeJobs(ctx)
 	})
 
-	runGin(appconfig, emailQueue)
+	runGin(appconfig, awsCfg, sqsClient, emailQueue)
 
 	wg.Wait()
 }
 
 // runGin starts the HTTP server for email requests.
-func runGin(appconfig *config.AppConfig, emailQueue email.MailQueue) {
+func runGin(appconfig *config.AppConfig,
+	awsCfg aws.Config,
+	sqsClient *sqs.Client,
+	emailQueue email.MailQueue) {
 	// once threads are working make a simple server to accept email requests
 	// through an HTTP endpoint.
 
@@ -235,11 +243,28 @@ func runGin(appconfig *config.AppConfig, emailQueue email.MailQueue) {
 			})
 		})
 
-	sendRoutes := v1Routes.Group("/jobs", jwtIsAccessTokenMiddleware)
+	jobRoutes := v1Routes.Group("/jobs", jwtIsAccessTokenMiddleware)
 
-	jobRoutes := &JobRoutes{emailQueue: emailQueue}
+	s3Client := s3.NewFromConfig(awsCfg)
 
-	sendRoutes.POST("/submit", jobRoutes.TestRoute)
+	// Create the S3 store for job file uploads.
+	s3Store := awssys.NewS3Store(s3Client, appconfig.AWS.S3.Buckets.Jobs)
+
+	// For storing job specific data
+	s3JobStore := awsjobs.NewS3JobStore(s3Store)
+
+	// For notifying the job processing queue of new submissions.
+	jobSender := awsjobs.NewSQSJobQueue(sqsClient, appconfig.AWS.SQS.QueueURLs.Jobs)
+
+	// Handle job submissions for test jobs
+	jobHandler := jobforms.NewSubmitJobHandler("test",
+		jobSender,
+		s3JobStore,
+		appconfig.AWS.S3.Buckets.Jobs,
+		int64(appconfig.App.MaxBodyBytes),
+	)
+
+	jobRoutes.POST("/submit", jobHandler.SubmitJobHandler)
 
 	router.Run(appconfig.App.Port)
 }

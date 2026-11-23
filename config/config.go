@@ -33,9 +33,14 @@ type AppConfig struct {
 		} `yaml:"-"`
 	} `yaml:"-"`
 	AWS struct {
-		Folder string `yaml:"folder"`
-		Bucket string `yaml:"-"`
-		SQS    struct {
+		S3 struct {
+			Buckets struct {
+				Jobs string `yaml:"-"`
+			} `yaml:"-"`
+			Folder string `yaml:"folder"`
+		} `yaml:"s3"`
+
+		SQS struct {
 			QueueURLs struct {
 				Email string `yaml:"-"`
 				Jobs  string `yaml:"-"`
@@ -84,7 +89,7 @@ func LoadConfig() *AppConfig {
 	cfg.App.Version = sys.Must(sys.LoadVersionInfo("version.json"))
 
 	cfg.App.DatabaseURL = envOr("DATABASE_URL", cfg.App.DatabaseURL)
-	cfg.AWS.Bucket = envOr("AWS_BUCKET", cfg.AWS.Bucket)
+	cfg.AWS.S3.Buckets.Jobs = envOr("AWS_S3_JOBS_BUCKET", cfg.AWS.S3.Buckets.Jobs)
 	cfg.AWS.SQS.QueueURLs.Jobs = envOr("AWS_SQS_JOBS_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Jobs)
 	cfg.AWS.SQS.QueueURLs.Email = envOr("AWS_SQS_EMAIL_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Email)
 

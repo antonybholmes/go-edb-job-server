@@ -14,8 +14,10 @@ require (
 	github.com/antonybholmes/go-jobs v0.0.0
 	github.com/antonybholmes/go-mail v0.0.0-20261120230506-649df8ca9051
 	github.com/antonybholmes/go-sys v0.0.0-20261118211639-408b038a66d6
-	github.com/antonybholmes/go-web v0.0.0-00010101000000-000000000000
+	github.com/antonybholmes/go-web v0.0.0-20261118211639-408b038a66d6
+	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.21
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.116.0
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.53.0
 	github.com/bytedance/gopkg v0.1.4
 	github.com/gin-gonic/gin v1.12.0
@@ -25,7 +27,6 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.48.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.27 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.21.3 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.9 // indirect
@@ -36,7 +37,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.12 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.12 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.116.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.79.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.14.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.39.5 // indirect
