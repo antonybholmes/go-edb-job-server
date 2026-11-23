@@ -29,8 +29,7 @@ type AppConfig struct {
 	} `yaml:"app"`
 	Auth struct {
 		Keys struct {
-			JwtES256PrivateKey *ecdsa.PrivateKey `yaml:"-"`
-			JwtES256PublicKey  *ecdsa.PublicKey  `yaml:"-"`
+			JwtES256PublicKey *ecdsa.PublicKey `yaml:"-"`
 		} `yaml:"-"`
 	} `yaml:"-"`
 	AWS struct {
@@ -39,15 +38,12 @@ type AppConfig struct {
 		SQS    struct {
 			QueueURLs struct {
 				Email string `yaml:"-"`
-				Jobs  struct {
-					Submitted string `yaml:"-"`
-					Status    string `yaml:"-"`
-				} `yaml:"-"`
+				Jobs  string `yaml:"-"`
 			} `yaml:"-"`
 			Threads      int `yaml:"threads"`
 			WaitTimeSecs int `yaml:"waitTimeSecs"`
 		} `yaml:"sqs"`
-	} `yaml:"-"`
+	} `yaml:"aws"`
 
 	Cors struct {
 		AllowOrigins     []string `yaml:"allowOrigins"`
@@ -89,24 +85,14 @@ func LoadConfig() *AppConfig {
 
 	cfg.App.DatabaseURL = envOr("DATABASE_URL", cfg.App.DatabaseURL)
 	cfg.AWS.Bucket = envOr("AWS_BUCKET", cfg.AWS.Bucket)
-	cfg.AWS.SQS.QueueURLs.Jobs.Submitted = envOr("AWS_SQS_JOBS_SUBMITTED_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Jobs.Submitted)
+	cfg.AWS.SQS.QueueURLs.Jobs = envOr("AWS_SQS_JOBS_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Jobs)
 	cfg.AWS.SQS.QueueURLs.Email = envOr("AWS_SQS_EMAIL_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Email)
 
 	//
 	// Load EC keys
 	//
 
-	bytes, err := os.ReadFile("jwt.es256.private.pem")
-	if err != nil {
-		log.Fatal().Msgf("%s", err)
-	}
-
-	cfg.Auth.Keys.JwtES256PrivateKey, err = jwt.ParseECPrivateKeyFromPEM(bytes)
-	if err != nil {
-		log.Fatal().Msgf("%s", err)
-	}
-
-	bytes, err = os.ReadFile("jwt.es256.public.pem")
+	bytes, err := os.ReadFile("jwt.es256.public.pem")
 	if err != nil {
 		log.Fatal().Msgf("%s", err)
 	}

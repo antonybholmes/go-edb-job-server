@@ -37,7 +37,7 @@ func NewSubmittedJobConsumer(cfg *config.AppConfig,
 func (c *SubmittedJobConsumer) ConsumeJobs(ctx context.Context) error {
 
 	sqsConsumer, err := awssys.NewSQSConsumer(c.client,
-		c.config.AWS.SQS.QueueURLs.Jobs.Submitted,
+		c.config.AWS.SQS.QueueURLs.Jobs,
 		c.config.AWS.SQS.Threads,
 		c.config.AWS.SQS.WaitTimeSecs,
 	)

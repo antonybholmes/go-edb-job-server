@@ -37,7 +37,7 @@ func NewCompletedJobConsumer(cfg *config.AppConfig,
 func (c *CompletedJobConsumer) ConsumeJobs(ctx context.Context) error {
 
 	sqsConsumer, err := awssys.NewSQSConsumer(c.client,
-		c.config.AWS.SQS.QueueURLs.Jobs.Status,
+		c.config.AWS.SQS.QueueURLs.Jobs,
 		c.config.AWS.SQS.Threads,
 		c.config.AWS.SQS.WaitTimeSecs,
 	)
