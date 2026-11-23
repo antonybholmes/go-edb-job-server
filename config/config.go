@@ -56,7 +56,7 @@ type AppConfig struct {
 }
 
 const (
-	Name       = "EDB Job Server"
+	Name       = "Experiments Job Server"
 	AppName    = "edb-job-server"
 	Copyright  = "Copyright (C) 2026 Antony Holmes"
 	ConfigFile = "config/app.yaml"
