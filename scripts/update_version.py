@@ -1,8 +1,6 @@
 import json
 from datetime import datetime
 
-from dotenv import dotenv_values
-
 INC = 2
 
 # current time and date
@@ -39,8 +37,3 @@ config["updated"] = time.strftime("%b %d, %Y")
 
 with open("version.json", "w") as f:
     json.dump(config, f, indent=4)
-
-
-# with open("version.env", "w") as f:
-#     for key in sorted(config):
-#         print(f'{key}="{config[key]}"', file=f)

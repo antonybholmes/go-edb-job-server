@@ -36,7 +36,7 @@ done
 echo "${type}: ${msg}"
 echo ${branch}
 
-python scripts/update_version.py
+python ./scripts/update_version.py
 
 
 

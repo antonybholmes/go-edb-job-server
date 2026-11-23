@@ -8,6 +8,8 @@ app:
     - ::1
   maxBodyBytes: 104857600
   pollIntervalSeconds: 10
+  email:
+    from: "Experiments Team <donotreply@rdf-lab.org>"
 
 cors:
   allowOrigins:
@@ -30,3 +32,6 @@ cors:
 
 aws:
   folder: "jobs/crispr/"
+  sqs:
+    threads: 5
+    waitTimeSecs: 10

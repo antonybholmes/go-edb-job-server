@@ -18,19 +18,30 @@ type AppConfig struct {
 			JwtES256PublicKey  *ecdsa.PublicKey  `yaml:"-"`
 		} `yaml:"-"`
 	} `yaml:"-"`
-	Aws struct {
+	AWS struct {
 		Folder string `yaml:"folder"`
 		Bucket string `yaml:"-"`
-		Sqs    struct {
-			QueueURL string `yaml:"-"`
-		} `yaml:"-"`
+		SQS    struct {
+			QueueURLs struct {
+				Email string `yaml:"-"`
+				Jobs  struct {
+					Submitted string `yaml:"-"`
+					Status    string `yaml:"-"`
+				} `yaml:"-"`
+			} `yaml:"-"`
+			Threads      int `yaml:"threads"`
+			WaitTimeSecs int `yaml:"waitTimeSecs"`
+		} `yaml:"sqs"`
 	} `yaml:"-"`
 	App struct {
-		URL             string   `yaml:"url"`
-		Domain          string   `yaml:"domain"`
-		LogFile         string   `yaml:"logFile"`
-		Port            string   `yaml:"port"`
-		DatabaseURL     string   `yaml:"-"`
+		URL         string `yaml:"url"`
+		Domain      string `yaml:"domain"`
+		LogFile     string `yaml:"logFile"`
+		Port        string `yaml:"port"`
+		DatabaseURL string `yaml:"-"`
+		Email       struct {
+			From string `yaml:"from"`
+		} `yaml:"email"`
 		TrustedProxies  []string `yaml:"trustedProxies"`
 		MaxBodyBytes    int64    `yaml:"maxBodyBytes"`
 		PollIntervalSec int      `yaml:"pollIntervalSeconds"`
@@ -45,7 +56,7 @@ type AppConfig struct {
 }
 
 const (
-	Name       = "EDB Job Server"
+	Name       = "Experiments Job Server"
 	AppName    = "edb-job-server"
 	Copyright  = "Copyright (C) 2026 Antony Holmes"
 	ConfigFile = "config/app.yaml"
@@ -72,8 +83,9 @@ func LoadConfig() *AppConfig {
 	}
 
 	cfg.App.DatabaseURL = envOr("DATABASE_URL", cfg.App.DatabaseURL)
-	cfg.Aws.Bucket = envOr("AWS_BUCKET", cfg.Aws.Bucket)
-	cfg.Aws.Sqs.QueueURL = envOr("AWS_SQS_QUEUE_URL", cfg.Aws.Sqs.QueueURL)
+	cfg.AWS.Bucket = envOr("AWS_BUCKET", cfg.AWS.Bucket)
+	cfg.AWS.SQS.QueueURLs.Jobs.Submitted = envOr("AWS_SQS_JOBS_SUBMITTED_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Jobs.Submitted)
+	cfg.AWS.SQS.QueueURLs.Email = envOr("AWS_SQS_EMAIL_QUEUE_URL", cfg.AWS.SQS.QueueURLs.Email)
 
 	//
 	// Load EC keys
