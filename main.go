@@ -4,9 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"runtime"
 
 	"github.com/antonybholmes/go-edb-jobs-server/config"
 	"github.com/antonybholmes/go-edb-jobs-server/handlers"
+	"github.com/antonybholmes/go-web"
+	"github.com/antonybholmes/go-web/auth/token"
+	"github.com/antonybholmes/go-web/middleware"
+	"github.com/gin-gonic/gin"
 
 	"github.com/antonybholmes/go-jobs"
 	awsmail "github.com/antonybholmes/go-mail/aws"
@@ -15,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	email "github.com/antonybholmes/go-mail"
 	"github.com/antonybholmes/go-sys/log"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -183,5 +190,56 @@ func main() {
 		completedJobConsumer.ConsumeJobs(ctx)
 	})
 
+	runGin(appconfig, emailQueue)
+
 	wg.Wait()
+}
+
+// runGin starts the HTTP server for email requests.
+func runGin(appconfig *config.AppConfig, emailQueue email.MailQueue) {
+	// once threads are working make a simple server to accept email requests
+	// through an HTTP endpoint.
+
+	router := gin.New()
+	router.SetTrustedProxies(appconfig.App.TrustedProxies)
+
+	//router.Use(cors.New(corsConfig))                       // Check CORS first
+	router.Use(middleware.ErrorHandlerMiddleware()) // Handle errors early
+	router.Use(middleware.LoggingMiddleware())      // Log relevant requests only
+	//outer.Use(otelgin.Middleware("edb-server"))           // Trace valid requests
+	//router.Use(sessions.Sessions(cfg.Session.Name, store)) // Load sessions for routes that need them
+	router.Use(gin.Recovery())
+
+	claimsParser := middleware.NewUserJWTParser(middleware.NewJwtClaimsES256Parser(appconfig.Auth.Keys.JwtES256PublicKey))
+
+	jwtIsAccessTokenMiddleware := middleware.JWTIsSpecificTokenTypeMiddleware(token.TokenTypeAccess, claimsParser)
+
+	v1Routes := router.Group("/v1")
+
+	v1Routes.GET("/about",
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, web.AboutResp{
+				Name:      config.AppName,
+				Version:   appconfig.App.Version.Version,
+				Build:     appconfig.App.Version.Build,
+				Updated:   appconfig.App.Version.Updated,
+				Copyright: config.Copyright,
+			})
+		})
+
+	v1Routes.GET("/info",
+		func(c *gin.Context) {
+			web.MakeDataResp(c, "", web.InfoResp{
+				Arch:   runtime.GOARCH,
+				IpAddr: c.ClientIP(),
+			})
+		})
+
+	sendRoutes := v1Routes.Group("/jobs", jwtIsAccessTokenMiddleware)
+
+	jobRoutes := &JobRoutes{emailQueue: emailQueue}
+
+	sendRoutes.POST("/submit", jobRoutes.TestRoute)
+
+	router.Run(appconfig.App.Port)
 }

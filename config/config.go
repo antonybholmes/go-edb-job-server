@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/antonybholmes/go-sys"
 	"github.com/antonybholmes/go-sys/log"
 	"github.com/golang-jwt/jwt/v5"
 
@@ -12,6 +13,20 @@ import (
 )
 
 type AppConfig struct {
+	App struct {
+		URL         string `yaml:"url"`
+		Domain      string `yaml:"domain"`
+		LogFile     string `yaml:"logFile"`
+		Port        string `yaml:"port"`
+		DatabaseURL string `yaml:"-"`
+		Email       struct {
+			From string `yaml:"from"`
+		} `yaml:"email"`
+		Version         sys.VersionInfo `yaml:"-"`
+		TrustedProxies  []string        `yaml:"trustedProxies"`
+		MaxBodyBytes    int64           `yaml:"maxBodyBytes"`
+		PollIntervalSec int             `yaml:"pollIntervalSeconds"`
+	} `yaml:"app"`
 	Auth struct {
 		Keys struct {
 			JwtES256PrivateKey *ecdsa.PrivateKey `yaml:"-"`
@@ -33,19 +48,7 @@ type AppConfig struct {
 			WaitTimeSecs int `yaml:"waitTimeSecs"`
 		} `yaml:"sqs"`
 	} `yaml:"-"`
-	App struct {
-		URL         string `yaml:"url"`
-		Domain      string `yaml:"domain"`
-		LogFile     string `yaml:"logFile"`
-		Port        string `yaml:"port"`
-		DatabaseURL string `yaml:"-"`
-		Email       struct {
-			From string `yaml:"from"`
-		} `yaml:"email"`
-		TrustedProxies  []string `yaml:"trustedProxies"`
-		MaxBodyBytes    int64    `yaml:"maxBodyBytes"`
-		PollIntervalSec int      `yaml:"pollIntervalSeconds"`
-	} `yaml:"app"`
+
 	Cors struct {
 		AllowOrigins     []string `yaml:"allowOrigins"`
 		AllowMethods     []string `yaml:"allowMethods"`
@@ -81,6 +84,8 @@ func LoadConfig() *AppConfig {
 		log.Fatal().Msgf("failed to parse config file: %v", err)
 		os.Exit(1)
 	}
+
+	cfg.App.Version = sys.Must(sys.LoadVersionInfo("version.json"))
 
 	cfg.App.DatabaseURL = envOr("DATABASE_URL", cfg.App.DatabaseURL)
 	cfg.AWS.Bucket = envOr("AWS_BUCKET", cfg.AWS.Bucket)
