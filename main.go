@@ -163,11 +163,7 @@ func main() {
 	}
 
 	// Create the email queue sending emails in addition to handling job submissions
-	submittedEmailQueue := awsmail.NewSQSEmailQueue(sqsClient,
-		appconfig.App.Email.From,
-		appconfig.AWS.SQS.QueueURLs.Email)
-
-	completedEmailQueue := awsmail.NewSQSEmailQueue(sqsClient,
+	emailQueue := awsmail.NewSQSEmailQueue(sqsClient,
 		appconfig.App.Email.From,
 		appconfig.AWS.SQS.QueueURLs.Email)
 
@@ -177,13 +173,13 @@ func main() {
 
 	// Monitor submitted and completed job queues
 	wg.Go(func() {
-		submitJobConsumer := handlers.NewSubmittedJobConsumer(appconfig, sqsClient, submittedEmailQueue, pool)
+		submitJobConsumer := handlers.NewSubmittedJobConsumer(appconfig, sqsClient, emailQueue, pool)
 		submitJobConsumer.ConsumeJobs(ctx)
 	})
 
 	// Monitor  job status queue
 	wg.Go(func() {
-		completedJobConsumer := handlers.NewCompletedJobConsumer(appconfig, sqsClient, completedEmailQueue, pool)
+		completedJobConsumer := handlers.NewCompletedJobConsumer(appconfig, sqsClient, emailQueue, pool)
 		completedJobConsumer.ConsumeJobs(ctx)
 	})
 

@@ -36,9 +36,10 @@ echo ${branch}
 
 ./commit.sh -t "${type}" -m "${msg}"  
 
-git switch main
-git merge dev -m "${type}: ${msg}" -X theirs
-git checkout dev -- version.json
+#git merge dev -m "${type}: ${msg}" -X theirs
+#git checkout dev -- version.json
+git reset --hard dev
+git push --force-with-lease origin main
 
 #git push -u origin main
 ./commit.sh -t "${type}" -m "${msg}"
