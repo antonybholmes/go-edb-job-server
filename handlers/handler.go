@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/antonybholmes/go-edb-jobs-server/config"
 	crisprjob "github.com/antonybholmes/go-edb-jobs-server/jobs/crispr"
@@ -67,7 +66,7 @@ func (c *JobConsumer) ConsumeJobs(ctx context.Context) error {
 	consumer.Consume(ctx, func(ctx context.Context, job *jobs.Job) error {
 		// Process the job here
 
-		log.Debug().Msgf("Processing job: job ID: %v", job.ID)
+		log.Debug().Msgf("Processing job: job ID: %v, status: %v, type: %v  ", job.ID, job.Status, jobs.JobStatusSubmitted)
 
 		err := dbStore.InsertJob(ctx, job)
 
@@ -96,8 +95,8 @@ func (c *JobConsumer) ConsumeJobs(ctx context.Context) error {
 				)
 				return processor.ProcessCrisprFile(ctx, job)
 			default:
-				log.Error().Msgf("Unknown job type: %s", job.Type)
-				return fmt.Errorf("unknown job type: %s", job.Type)
+				log.Error().Msgf("Unknown job type: job ID: %s, status: %s, type: %s", job.ID, job.Status, job.Type)
+				return nil //fmt.Errorf("unknown job type: %s", job.Type)
 			}
 		}
 

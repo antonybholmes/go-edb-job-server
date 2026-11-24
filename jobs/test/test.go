@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	jobfiles "github.com/antonybholmes/go-edb-jobs-server/jobs"
 	"github.com/antonybholmes/go-jobs"
 	awsjobs "github.com/antonybholmes/go-jobs/aws"
 	"github.com/antonybholmes/go-sys"
@@ -33,7 +34,7 @@ func NewTestProcessor(s3Store *awssys.S3Store,
 		s3Store:    s3Store,
 		s3JobStore: s3JobStore,
 		jobQueue:   jobQueue,
-		tmpDir:     tmpDir + "/test",
+		tmpDir:     tmpDir,
 	}
 }
 
@@ -45,9 +46,17 @@ func (p *TestProcessor) ProcessCrisprFile(ctx context.Context, job *jobs.Job) er
 		return nil
 	}
 
+	localDir, err := jobfiles.MakeLocalDir(p.tmpDir, job)
+	if err != nil {
+		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to create local directory")
+		return err
+	}
+
 	jobFile := job.Files[0]
 
-	localPath, err := p.s3JobStore.DownloadJobFileLocal(ctx, jobFile, p.tmpDir)
+	localPath := filepath.Join(localDir, filepath.Base(jobFile.Key))
+
+	_, err = p.s3JobStore.DownloadJobFileLocal(ctx, jobFile, localPath)
 
 	if err != nil {
 		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to download job file")
@@ -58,7 +67,7 @@ func (p *TestProcessor) ProcessCrisprFile(ctx context.Context, job *jobs.Job) er
 
 	// run shell command or any processing needed on the local file
 	log.Info().Str("jobId", job.ID).Str("localPath", localPath).Msg("Processing local file")
-	outputPath, err := p.processLocalFile(job, localPath)
+	outputPath, err := p.processLocalFile(job, localDir, localPath)
 
 	if err != nil {
 		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to process local file")
@@ -80,7 +89,7 @@ func (p *TestProcessor) ProcessCrisprFile(ctx context.Context, job *jobs.Job) er
 	filename := filepath.Base(outputPath)
 
 	// Make a key to save file
-	key := awsjobs.MakeS3JobFileOutputKey(job, filename)
+	key := awsjobs.MakeS3JobFileExactOutputKey(job, filename)
 
 	// Write the file to S3
 	err = p.s3Store.Upload(ctx, file, key, awssys.ContentTypeTextPlain)
@@ -105,7 +114,12 @@ func (p *TestProcessor) ProcessCrisprFile(ctx context.Context, job *jobs.Job) er
 		Files:  []*jobs.JobFile{outputFile},
 	}
 
-	p.jobQueue.SendJob(ctx, &newJob)
+	log.Debug().Msgf("new job %v", &newJob)
+
+	if err := p.jobQueue.SendJob(ctx, &newJob); err != nil {
+		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to send job to queue")
+		return err
+	}
 
 	// Clean up local files if needed
 	//os.Remove(localPath)
@@ -114,12 +128,12 @@ func (p *TestProcessor) ProcessCrisprFile(ctx context.Context, job *jobs.Job) er
 	return nil
 }
 
-func (p *TestProcessor) processLocalFile(job *jobs.Job, path string) (string, error) {
+func (p *TestProcessor) processLocalFile(job *jobs.Job, localDir string, path string) (string, error) {
 	// Implement the actual processing logic here
 	// For now, just log the processing
 	log.Info().Str("jobId", job.ID).Str("localPath", path).Msg("Processing local file")
 
-	out := filepath.Join(p.tmpDir, "test_"+job.ID+".txt")
+	out := filepath.Join(localDir, "test.txt")
 
 	// Run the shell command
 	cmd := exec.Command("python", TestPythonScript, "--file="+path, "--out="+out)

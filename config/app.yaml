@@ -38,4 +38,4 @@ aws:
     waitTimeSecs: 10
     maxReceiveCount: 5
 files:
-  tmp: ./data/tmp/
+  tmp: ./data/tmp/jobs/users/

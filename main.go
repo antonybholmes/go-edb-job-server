@@ -265,6 +265,8 @@ func runGin(appconfig *config.AppConfig,
 
 	jobRoutes := v1Routes.Group("/jobs", jwtIsAccessTokenMiddleware)
 
+	testJobRoute := jobRoutes.Group("/test")
+
 	// Handle job submissions for test jobs
 	jobHandler := jobforms.NewSubmitJobHandler("test",
 		jobSender,
@@ -273,7 +275,7 @@ func runGin(appconfig *config.AppConfig,
 		int64(appconfig.App.MaxBodyBytes),
 	)
 
-	jobRoutes.POST("/submit", jobHandler.SubmitJobHandler)
+	testJobRoute.POST("/submit", jobHandler.SubmitJobHandler)
 
 	router.Run(appconfig.App.Port)
 }
