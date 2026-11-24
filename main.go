@@ -179,6 +179,17 @@ func main() {
 		appconfig.App.Email.From,
 		appconfig.AWS.SQS.QueueURLs.Email)
 
+	s3Client := s3.NewFromConfig(awsCfg)
+
+	// Create the S3 store for job file uploads.
+	s3Store := awssys.NewS3Store(s3Client, appconfig.AWS.S3.Buckets.Jobs)
+
+	// For storing job specific data
+	s3JobStore := awsjobs.NewS3JobStore(s3Store)
+
+	// For notifying the job processing queue of new submissions.
+	jobQueue := awsjobs.NewSQSJobQueue(sqsClient, appconfig.AWS.SQS.QueueURLs.Jobs)
+
 	// Define all the consumers we need for each queue
 
 	var wg sync.WaitGroup
@@ -191,11 +202,17 @@ func main() {
 
 	// Monitor  job status queue
 	wg.Go(func() {
-		completedJobConsumer := handlers.NewJobStatusConsumer(appconfig, sqsClient, emailQueue, pool)
+		completedJobConsumer := handlers.NewJobConsumer(appconfig,
+			pool,
+			sqsClient,
+			s3Store,
+			s3JobStore,
+			jobQueue,
+			emailQueue)
 		completedJobConsumer.ConsumeJobs(ctx)
 	})
 
-	runGin(appconfig, awsCfg, sqsClient, emailQueue)
+	runGin(appconfig, awsCfg, sqsClient, s3Store, s3JobStore, jobQueue, emailQueue)
 
 	wg.Wait()
 }
@@ -204,6 +221,9 @@ func main() {
 func runGin(appconfig *config.AppConfig,
 	awsCfg aws.Config,
 	sqsClient *sqs.Client,
+	s3Store *awssys.S3Store,
+	s3JobStore *awsjobs.S3JobStore,
+	jobSender *awsjobs.SQSJobQueue,
 	emailQueue email.MailQueue) {
 	// once threads are working make a simple server to accept email requests
 	// through an HTTP endpoint.
@@ -244,17 +264,6 @@ func runGin(appconfig *config.AppConfig,
 		})
 
 	jobRoutes := v1Routes.Group("/jobs", jwtIsAccessTokenMiddleware)
-
-	s3Client := s3.NewFromConfig(awsCfg)
-
-	// Create the S3 store for job file uploads.
-	s3Store := awssys.NewS3Store(s3Client, appconfig.AWS.S3.Buckets.Jobs)
-
-	// For storing job specific data
-	s3JobStore := awsjobs.NewS3JobStore(s3Store)
-
-	// For notifying the job processing queue of new submissions.
-	jobSender := awsjobs.NewSQSJobQueue(sqsClient, appconfig.AWS.SQS.QueueURLs.Jobs)
 
 	// Handle job submissions for test jobs
 	jobHandler := jobforms.NewSubmitJobHandler("test",

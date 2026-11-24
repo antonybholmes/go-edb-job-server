@@ -45,10 +45,14 @@ type AppConfig struct {
 				Email string `yaml:"-"`
 				Jobs  string `yaml:"-"`
 			} `yaml:"-"`
-			Threads      int `yaml:"threads"`
-			WaitTimeSecs int `yaml:"waitTimeSecs"`
+			Threads         int `yaml:"threads"`
+			WaitTimeSecs    int `yaml:"waitTimeSecs"`
+			MaxReceiveCount int `yaml:"maxReceiveCount"`
 		} `yaml:"sqs"`
 	} `yaml:"aws"`
+	Files struct {
+		TmpDir string `yaml:"tmp"`
+	} `yaml:"files"`
 
 	Cors struct {
 		AllowOrigins     []string `yaml:"allowOrigins"`
