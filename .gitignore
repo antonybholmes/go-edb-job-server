@@ -39,7 +39,5 @@ jwtRS256.key.pub
 auth0.key.pub
 clerk.key.pem
 
-jwt.es256.private.pem
-jwt.es256.public.pem
-jwt.es256.private.key
-jwt.es256.public.key
+*.pem
+*.key

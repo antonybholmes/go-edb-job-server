@@ -13,7 +13,7 @@ replace github.com/antonybholmes/go-jobs => ../go-jobs
 require (
 	github.com/antonybholmes/go-jobs v0.0.0
 	github.com/antonybholmes/go-mail v0.0.0-20261120230506-649df8ca9051
-	github.com/antonybholmes/go-sys v0.0.0-20261118211639-408b038a66d6
+	github.com/antonybholmes/go-sys v0.0.0-20261123005409-c7d66a3d2106
 	github.com/antonybholmes/go-web v0.0.0-20261118211639-408b038a66d6
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.21
@@ -42,7 +42,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.39.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.53.0 // indirect
-	github.com/aws/smithy-go v1.28.9 // indirect
+	github.com/aws/smithy-go v1.28.10 // indirect
 	github.com/bytedance/sonic v1.15.5 // indirect
 	github.com/bytedance/sonic/loader v0.5.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -75,8 +75,8 @@ require (
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.34 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
-	github.com/quic-go/quic-go v0.65.0 // indirect
-	github.com/redis/go-redis/v9 v9.23.0 // indirect
+	github.com/quic-go/quic-go v0.66.0 // indirect
+	github.com/redis/go-redis/v9 v9.24.0 // indirect
 	github.com/richardlehane/mscfb v1.0.10 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
@@ -94,7 +94,7 @@ require (
 	go.uber.org/atomic v1.12.0 // indirect
 	golang.org/x/arch v0.33.0 // indirect
 	golang.org/x/crypto v0.59.0 // indirect
-	golang.org/x/exp v0.0.0-20260611194520-c48552f49976 // indirect
+	golang.org/x/exp v0.0.0-20261124000051-d6646c509b6d // indirect
 	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect

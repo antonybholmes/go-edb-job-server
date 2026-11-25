@@ -25,11 +25,11 @@ go run .
 
 Optional settings:
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `ADDR` | `:8080` | HTTP listen address |
-| `MAX_BODY_BYTES` | `104857600` | Maximum entire HTTP request body, including multipart overhead; at most 5 GiB |
-| `OUTBOX_POLL_INTERVAL` | `5s` | Time between polls when the outbox is empty or delivery fails |
+| Variable               | Default     | Description                                                                   |
+| ---------------------- | ----------- | ----------------------------------------------------------------------------- |
+| `ADDR`                 | `:8080`     | HTTP listen address                                                           |
+| `MAX_BODY_BYTES`       | `104857600` | Maximum entire HTTP request body, including multipart overhead; at most 5 GiB |
+| `OUTBOX_POLL_INTERVAL` | `5s`        | Time between polls when the outbox is empty or delivery fails                 |
 
 ## Submit
 
@@ -69,3 +69,20 @@ authorization, request timeouts, and upload/content validation.
 Run `go test ./...` for unit tests. To include the PostgreSQL integration test,
 set `TEST_DATABASE_URL` to a test database whose user can create and drop
 schemas, then run `go test ./...`. The test creates and removes its own schema.
+
+## Setting up s3 and cloudfront
+
+### Step 1: Prepare Your S3 Bucket
+
+1. Open the S3 Console and select your bucket (or create a new one).
+2. Go to the Permissions tab and ensure Block all public access is turned On. (CloudFront does not require a public bucket).
+3. Upload your files to the bucket (e.g., index.html or images/logo.png).
+
+### Step 2: Create the CloudFront Distribution
+
+1. Open the CloudFront Console and click Create distribution.
+2. Under Origin domain, click the search bar and select your S3 bucket from the dropdown list (do not use an S3 static website endpoint).
+3. Under Origin access, select Origin access control settings (recommended).
+4. Click Create new OAC, keep the default settings, and click Create.
+5. Scroll down to Web Application Firewall (WAF) and choose whether to enable security protections (or select Do not enable security protections to avoid extra WAF charges during testing).
+6. (Optional) If you are hosting a website, enter index.html in the Default root object field at the bottom.
