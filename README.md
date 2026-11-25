@@ -86,3 +86,28 @@ schemas, then run `go test ./...`. The test creates and removes its own schema.
 4. Click Create new OAC, keep the default settings, and click Create.
 5. Scroll down to Web Application Firewall (WAF) and choose whether to enable security protections (or select Do not enable security protections to avoid extra WAF charges during testing).
 6. (Optional) If you are hosting a website, enter index.html in the Default root object field at the bottom.
+
+## Signed keys
+
+1. Generate the ECDSA P-256 key pair using OpenSSL.
+2. Upload public_key.pem to CloudFront under Key management > Public keys, attach it to a Key group, and assign that key group to your distribution's cache behavior
+
+3. Make sure you are in the CloudFront Console (not AWS KMS / Key Management Service, which is a separate AWS service).
+4. Look at the left-hand navigation sidebar in CloudFront (if it's collapsed, click the ☰ menu icon in the top-left corner).
+5. Scroll down toward the bottom of that sidebar to find the Key management section.
+6. Click Public keys.
+
+How to "Upload" Your Key (Copy-Paste)
+
+1. Click the orange Create public key (or Add public key) button.
+2. Enter a Name (e.g., my-signing-key).
+3. Open your public_key.pem file in a text editor (or run cat public_key.pem in your terminal) and copy the entire text block, including the header and footer lines
+4. FOR COMPATABILITY USE RSA 2048 KEYS and not ES256
+
+Create key group
+
+1. Create key group
+2. Add key.
+3. Under distribution choose behavior.
+4. Turn on restrict viewer access
+5. Add key group.
