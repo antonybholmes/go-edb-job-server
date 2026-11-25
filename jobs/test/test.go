@@ -54,7 +54,7 @@ func (p *TestProcessor) ProcessCrisprFile(ctx context.Context, job *jobs.Job) er
 
 	jobFile := job.Files[0]
 
-	localPath := filepath.Join(localDir, filepath.Base(jobFile.Key))
+	localPath := filepath.Join(localDir, filepath.Base(jobFile.ObjectKey))
 
 	_, err = p.s3JobStore.DownloadJobFileLocal(ctx, jobFile, localPath)
 
@@ -110,6 +110,8 @@ func (p *TestProcessor) ProcessCrisprFile(ctx context.Context, job *jobs.Job) er
 
 	newJob := jobs.Job{
 		ID:     job.ID,
+		User:   job.User,
+		Type:   job.Type,
 		Status: jobs.JobStatusCompleted,
 		Files:  []*jobs.JobFile{outputFile},
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/antonybholmes/go-edb-jobs-server/config"
 	crisprjob "github.com/antonybholmes/go-edb-jobs-server/jobs/crispr"
 	testjob "github.com/antonybholmes/go-edb-jobs-server/jobs/test"
+	dbjobs "github.com/antonybholmes/go-jobs/db"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -61,7 +62,7 @@ func (c *JobConsumer) ConsumeJobs(ctx context.Context) error {
 
 	consumer := awsjobs.NewSQSJobConsumer(sqsConsumer)
 
-	dbStore := jobs.NewPostgresStore(c.pool, c.emailQueue)
+	dbStore := dbjobs.NewPostgresStore(c.pool, c.emailQueue)
 
 	consumer.Consume(ctx, func(ctx context.Context, job *jobs.Job) error {
 		// Process the job here

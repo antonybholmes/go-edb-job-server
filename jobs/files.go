@@ -25,7 +25,7 @@ func MakeLocalFilePath(tmpDir string, job *jobs.Job, jobFile *jobs.JobFile) (str
 		return "", err
 	}
 
-	path := filepath.Join(dir, filepath.Base(jobFile.Key))
+	path := filepath.Join(dir, filepath.Base(jobFile.ObjectKey))
 
 	return path, nil
 }

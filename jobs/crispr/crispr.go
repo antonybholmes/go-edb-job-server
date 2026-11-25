@@ -101,6 +101,8 @@ func (p *CrisprProcessor) ProcessCrisprFile(ctx context.Context, job *jobs.Job) 
 
 	newJob := jobs.Job{
 		ID:     job.ID,
+		User:   job.User,
+		Type:   job.Type,
 		Status: jobs.JobStatusCompleted,
 		Files:  []*jobs.JobFile{outputFile},
 	}

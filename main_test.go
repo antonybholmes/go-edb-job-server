@@ -1,27 +1,20 @@
 package main
 
-import (
-	"context"
-	"errors"
-
-	"github.com/antonybholmes/go-jobs"
-)
-
 type retryPublisher struct {
 	done  chan struct{}
 	calls int
 }
 
-func (p *retryPublisher) PublishOne(_ context.Context, _ jobs.MessageSender) (bool, error) {
-	p.calls++
-	if p.calls == 1 {
-		return false, errors.New("temporary failure")
-	}
-	if p.calls == 2 {
-		close(p.done)
-	}
-	return false, nil
-}
+// func (p *retryPublisher) PublishOne(_ context.Context, _ jobs.MessageSender) (bool, error) {
+// 	p.calls++
+// 	if p.calls == 1 {
+// 		return false, errors.New("temporary failure")
+// 	}
+// 	if p.calls == 2 {
+// 		close(p.done)
+// 	}
+// 	return false, nil
+// }
 
 // func TestOutboxRetriesAndStops(t *testing.T) {
 // 	ctx, cancel := context.WithCancel(context.Background())

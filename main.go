@@ -15,12 +15,10 @@ import (
 	"github.com/antonybholmes/go-web/middleware"
 	"github.com/gin-gonic/gin"
 
-	"github.com/antonybholmes/go-jobs"
 	awsmail "github.com/antonybholmes/go-mail/aws"
 
 	"os"
 	"sync"
-	"time"
 
 	awsjobs "github.com/antonybholmes/go-jobs/aws"
 	email "github.com/antonybholmes/go-mail"
@@ -122,24 +120,24 @@ func run(cfg *config.AppConfig) error {
 
 // runOutbox repeatedly delivers pending messages, polling after an empty queue
 // or an error until its context is canceled.
-func runOutbox(ctx context.Context, store jobs.OutboxPublisher, sender jobs.MessageSender, interval time.Duration) {
-	for ctx.Err() == nil {
-		sent, err := store.PublishOne(ctx, sender)
-		if err != nil && ctx.Err() == nil {
-			log.Error().Msgf("publish outbox message: %v", err)
-		}
-		if sent && err == nil {
-			continue
-		}
-		timer := time.NewTimer(interval)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return
-		case <-timer.C:
-		}
-	}
-}
+// func runOutbox(ctx context.Context, store jobs.OutboxPublisher, sender jobs.MessageSender, interval time.Duration) {
+// 	for ctx.Err() == nil {
+// 		sent, err := store.PublishOne(ctx, sender)
+// 		if err != nil && ctx.Err() == nil {
+// 			log.Error().Msgf("publish outbox message: %v", err)
+// 		}
+// 		if sent && err == nil {
+// 			continue
+// 		}
+// 		timer := time.NewTimer(interval)
+// 		select {
+// 		case <-ctx.Done():
+// 			timer.Stop()
+// 			return
+// 		case <-timer.C:
+// 		}
+// 	}
+// }
 
 func init() {
 	log.SetAppName(config.AppName)
