@@ -2,8 +2,10 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/antonybholmes/go-jobs"
 	sysfiles "github.com/antonybholmes/go-sys/files"
@@ -26,11 +28,11 @@ type (
 	}
 
 	LocalFileJobProcessor struct {
+		jobQueue   jobs.JobQueue
 		s3Store    *awssys.S3Store
 		s3JobStore *awsjobs.S3JobStore
-		jobQueue   jobs.JobQueue
-		tmpDir     string
 		handlers   map[jobs.JobType]JobFunc
+		tmpDir     string
 	}
 )
 
@@ -103,48 +105,80 @@ func (p *LocalFileJobProcessor) ProcessFile(ctx context.Context, job *jobs.Job) 
 		return err
 	}
 
+	// Determine file sizes of each file
+	// outputSizes := make([]int64, len(outputPaths))
+	// for i, outputPath := range outputPaths {
+	// 	stat, err := os.Stat(outputPath)
+	// 	if err != nil {
+	// 		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to stat output file")
+	// 		return err
+	// 	}
+	// 	log.Debug().Str("jobId", job.ID).Str("file", outputPath).Int64("size", stat.Size()).Msg("Output file size")
+	// 	outputSizes[i] = stat.Size()
+	// }
+
 	//
 	// Upload the output files to S3 and create new job file entries
 	//
 
-	outputFiles := make([]*jobs.JobFile, len(outputPaths))
+	//outputFiles := make([]*jobs.JobFile, len(outputPaths))
 
-	for _, outputPath := range outputPaths {
+	// make zip file name from the word output and the date and time
+	zipFilename := fmt.Sprintf("%s_%s_results_%s.zip", job.Type, job.ID, time.Now().Format("20060102-150405"))
 
-		file, stat, err := sysfiles.OpenFile(outputPath)
+	zipKey := awsjobs.MakeS3JobFileOutputKey(job, zipFilename)
 
-		if err != nil {
-			log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to open local file")
-			return err
-		}
-		defer file.Close()
+	// Upload the output files as a zip archive to S3
+	fileSizeBytes, err := p.s3Store.ZipAndUpload(ctx, zipKey, outputPaths)
 
-		// need file size for S3 upload
-		fileSize := stat.Size()
-
-		// get basename e.g. output.txt
-		filename := filepath.Base(outputPath)
-
-		// Make a key to save file
-		key := awsjobs.MakeS3JobFileExactOutputKey(job, filename)
-
-		// Write the file to S3
-		err = p.s3Store.Upload(ctx, file, key, awssys.ContentTypeTextPlain)
-
-		if err != nil {
-			log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to upload file to S3")
-			return err
-		}
-
-		// make new output job file
-		outputFile := jobs.NewJobFile(jobs.JobFileTypeOutput,
-			key,
-			filename,
-			awssys.ContentTypeTextPlain,
-			fileSize,
-			nil)
-		outputFiles = append(outputFiles, outputFile)
+	if err != nil {
+		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to upload zip to S3")
+		return err
 	}
+
+	outputFile := jobs.NewJobFile(jobs.JobFileTypeOutput,
+		zipKey,
+		zipFilename,
+		fileSizeBytes,
+		nil)
+	//outputFiles = append(outputFiles, outputFile)
+
+	// for _, outputPath := range outputPaths {
+
+	// 	file, stat, err := sysfiles.OpenFile(outputPath)
+
+	// 	if err != nil {
+	// 		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to open local file")
+	// 		return err
+	// 	}
+	// 	defer file.Close()
+
+	// 	// need file size for S3 upload
+	// 	fileSize := stat.Size()
+
+	// 	// get basename e.g. output.txt
+	// 	filename := filepath.Base(outputPath)
+
+	// 	// Make a key to save file
+	// 	key := awsjobs.MakeS3JobFileOutputKey(job, filename)
+
+	// 	// Write the file to S3
+	// 	err = p.s3Store.Upload(ctx, file, key, awssys.ContentTypeTextPlain)
+
+	// 	if err != nil {
+	// 		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to upload file to S3")
+	// 		return err
+	// 	}
+
+	// 	// make new output job file
+	// 	outputFile := jobs.NewJobFile(jobs.JobFileTypeOutput,
+	// 		key,
+	// 		filename,
+	// 		awssys.ContentTypeTextPlain,
+	// 		fileSize,
+	// 		nil)
+	// 	outputFiles = append(outputFiles, outputFile)
+	// }
 
 	//
 	// Make a new job with the output files and mark it as completed and
@@ -152,18 +186,14 @@ func (p *LocalFileJobProcessor) ProcessFile(ctx context.Context, job *jobs.Job) 
 	// and notify the user.
 	//
 
-	newJob := jobs.Job{
-		ID:     job.ID,
-		User:   job.User,
-		Type:   job.Type,
-		Bucket: job.Bucket,
-		Status: jobs.JobStatusCompleted,
-		Files:  outputFiles,
-	}
+	// clone the job and change its details
+	newJob := job.Copy()
+	newJob.Status = jobs.JobStatusCompleted
+	newJob.Files = []*jobs.JobFile{outputFile}
 
-	log.Debug().Msgf("new job %v", &newJob)
+	log.Debug().Msgf("new job %v", *newJob)
 
-	if err := p.jobQueue.SendJob(ctx, &newJob); err != nil {
+	if err := p.jobQueue.SendJob(ctx, newJob); err != nil {
 		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to send job to queue")
 		return err
 	}

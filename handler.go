@@ -5,8 +5,6 @@ import (
 
 	"github.com/antonybholmes/go-edb-jobs-server/config"
 	"github.com/antonybholmes/go-edb-jobs-server/local"
-	"github.com/antonybholmes/go-edb-jobs-server/local/crispr"
-	"github.com/antonybholmes/go-edb-jobs-server/local/test"
 
 	dbjobs "github.com/antonybholmes/go-jobs/db"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -27,6 +25,7 @@ type (
 		jobQueue   *awsjobs.SQSJobQueue
 		emailQueue jobs.MailQueue
 		pool       *pgxpool.Pool
+		handlers   map[jobs.JobType]local.JobFunc
 	}
 )
 
@@ -37,6 +36,7 @@ func NewJobConsumer(cfg *config.AppConfig,
 	s3JobStore *awsjobs.S3JobStore,
 	jobQueue *awsjobs.SQSJobQueue,
 	emailQueue jobs.MailQueue,
+	handlers map[jobs.JobType]local.JobFunc,
 ) *JobConsumer {
 	return &JobConsumer{
 		config:     cfg,
@@ -46,6 +46,7 @@ func NewJobConsumer(cfg *config.AppConfig,
 		s3Store:    s3Store,
 		s3JobStore: s3JobStore,
 		emailQueue: emailQueue,
+		handlers:   handlers,
 	}
 }
 
@@ -66,16 +67,11 @@ func (c *JobConsumer) ConsumeJobs(ctx context.Context) error {
 
 	dbStore := dbjobs.NewPostgresStore(c.pool, c.emailQueue)
 
-	handlers := map[jobs.JobType]local.JobFunc{
-		jobs.JobTypeCrispr: crispr.ProcessFile,
-		jobs.JobTypeTest:   test.ProcessFile,
-	}
-
 	processor := local.NewLocalFileJobProcessor(c.s3Store,
 		c.s3JobStore,
 		c.jobQueue,
 		c.config.Files.TmpDir,
-		handlers)
+		c.handlers)
 
 	consumer.Consume(ctx, func(ctx context.Context, job *jobs.Job) error {
 		// Process the job here

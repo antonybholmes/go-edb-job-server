@@ -8,6 +8,10 @@ import (
 	"runtime"
 
 	"github.com/antonybholmes/go-edb-jobs-server/config"
+	"github.com/antonybholmes/go-edb-jobs-server/local"
+	"github.com/antonybholmes/go-edb-jobs-server/local/crispr"
+	"github.com/antonybholmes/go-edb-jobs-server/local/test"
+	"github.com/antonybholmes/go-jobs"
 
 	jobforms "github.com/antonybholmes/go-jobs/forms"
 	"github.com/antonybholmes/go-web"
@@ -21,10 +25,8 @@ import (
 	"sync"
 
 	awsjobs "github.com/antonybholmes/go-jobs/aws"
-	email "github.com/antonybholmes/go-mail"
 	awssys "github.com/antonybholmes/go-sys/aws"
 	"github.com/antonybholmes/go-sys/log"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -190,6 +192,11 @@ func main() {
 
 	// Define all the consumers we need for each queue
 
+	handlers := map[jobs.JobType]local.JobFunc{
+		jobs.JobTypeCrispr: crispr.ProcessFile,
+		jobs.JobTypeTest:   test.ProcessFile,
+	}
+
 	var wg sync.WaitGroup
 
 	// Monitor submitted and completed job queues
@@ -206,23 +213,21 @@ func main() {
 			s3Store,
 			s3JobStore,
 			jobQueue,
-			emailQueue)
+			emailQueue,
+			handlers)
 		completedJobConsumer.ConsumeJobs(ctx)
 	})
 
-	runGin(appconfig, awsCfg, sqsClient, s3Store, s3JobStore, jobQueue, emailQueue)
+	runGin(s3JobStore, jobQueue, appconfig)
 
 	wg.Wait()
 }
 
 // runGin starts the HTTP server for email requests.
-func runGin(appconfig *config.AppConfig,
-	awsCfg aws.Config,
-	sqsClient *sqs.Client,
-	s3Store *awssys.S3Store,
+func runGin(
 	s3JobStore *awsjobs.S3JobStore,
 	jobSender *awsjobs.SQSJobQueue,
-	emailQueue email.MailQueue) {
+	appconfig *config.AppConfig) {
 	// once threads are working make a simple server to accept email requests
 	// through an HTTP endpoint.
 
