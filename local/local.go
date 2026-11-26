@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/antonybholmes/go-jobs"
-	"github.com/antonybholmes/go-sys"
+	sysfiles "github.com/antonybholmes/go-sys/files"
 	"github.com/antonybholmes/go-sys/log"
 
 	awsjobs "github.com/antonybholmes/go-jobs/aws"
@@ -111,7 +111,7 @@ func (p *LocalFileJobProcessor) ProcessFile(ctx context.Context, job *jobs.Job) 
 
 	for _, outputPath := range outputPaths {
 
-		file, stat, err := sys.OpenFile(outputPath)
+		file, stat, err := sysfiles.OpenFile(outputPath)
 
 		if err != nil {
 			log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to open local file")
@@ -182,7 +182,7 @@ func (p *LocalFileJobProcessor) ProcessFile(ctx context.Context, job *jobs.Job) 
 func MakeLocalDir(tmpDir string, job *jobs.Job) (string, error) {
 	path := filepath.Join(tmpDir, job.User.ID, string(job.Type), job.ID)
 
-	err := os.MkdirAll(path, sys.FileModeOwnerFullGroupOtherReadEnter)
+	err := os.MkdirAll(path, sysfiles.FileModeOwnerFullGroupOtherReadEnter)
 	if err != nil {
 		return "", err
 	}
