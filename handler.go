@@ -1,11 +1,13 @@
-package handlers
+package main
 
 import (
 	"context"
 
 	"github.com/antonybholmes/go-edb-jobs-server/config"
-	crisprjob "github.com/antonybholmes/go-edb-jobs-server/jobs/crispr"
-	testjob "github.com/antonybholmes/go-edb-jobs-server/jobs/test"
+	"github.com/antonybholmes/go-edb-jobs-server/local"
+	"github.com/antonybholmes/go-edb-jobs-server/local/crispr"
+	"github.com/antonybholmes/go-edb-jobs-server/local/test"
+
 	dbjobs "github.com/antonybholmes/go-jobs/db"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -64,6 +66,17 @@ func (c *JobConsumer) ConsumeJobs(ctx context.Context) error {
 
 	dbStore := dbjobs.NewPostgresStore(c.pool, c.emailQueue)
 
+	handlers := map[jobs.JobType]local.JobFunc{
+		jobs.JobTypeCrispr: crispr.ProcessFile,
+		jobs.JobTypeTest:   test.ProcessFile,
+	}
+
+	processor := local.NewLocalFileJobProcessor(c.s3Store,
+		c.s3JobStore,
+		c.jobQueue,
+		c.config.Files.TmpDir,
+		handlers)
+
 	consumer.Consume(ctx, func(ctx context.Context, job *jobs.Job) error {
 		// Process the job here
 
@@ -78,51 +91,8 @@ func (c *JobConsumer) ConsumeJobs(ctx context.Context) error {
 
 		// attempt to run job if just submitted
 		if job.Status == jobs.JobStatusSubmitted {
-			switch job.Type {
-			case "crispr":
-				processor := crisprjob.NewCrisprProcessor(
-					c.s3Store,
-					c.s3JobStore,
-					c.jobQueue,
-					c.config.Files.TmpDir,
-				)
-				return processor.ProcessCrisprFile(ctx, job)
-			case "test":
-				processor := testjob.NewTestProcessor(
-					c.s3Store,
-					c.s3JobStore,
-					c.jobQueue,
-					c.config.Files.TmpDir,
-				)
-				return processor.ProcessCrisprFile(ctx, job)
-			default:
-				log.Error().Msgf("Unknown job type: job ID: %s, status: %s, type: %s", job.ID, job.Status, job.Type)
-				return nil //fmt.Errorf("unknown job type: %s", job.Type)
-			}
+			return processor.ProcessFile(ctx, job)
 		}
-
-		// switch job.Status {
-		// case jobs.JobStatusSubmitted:
-		// 	err := dbStore.InsertJob(ctx, job)
-
-		// 	if err != nil {
-		// 		log.Error().Err(err).Msg("Failed to update job status in database")
-		// 		return err
-		// 	}
-		// case jobs.JobQueueItemTypeStatus:
-		// 	// Create job and send email notification if needed
-		// 	err := dbStore.UpdateJobStatus(ctx, job.ID, job.Status)
-
-		// 	if err != nil {
-		// 		log.Error().Err(err).Msg("Failed to update job status in database")
-		// 		return err
-		// 	}
-
-		// default:
-		// 	log.Error().Msgf("Unknown job status: %s", job.Status)
-		// 	return fmt.Errorf("unknown job status: %s", job.Status)
-
-		// }
 
 		return nil
 	})

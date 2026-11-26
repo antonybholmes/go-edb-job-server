@@ -8,7 +8,7 @@ import (
 	"runtime"
 
 	"github.com/antonybholmes/go-edb-jobs-server/config"
-	"github.com/antonybholmes/go-edb-jobs-server/handlers"
+
 	jobforms "github.com/antonybholmes/go-jobs/forms"
 	"github.com/antonybholmes/go-web"
 	"github.com/antonybholmes/go-web/auth/token"
@@ -200,7 +200,7 @@ func main() {
 
 	// Monitor  job status queue
 	wg.Go(func() {
-		completedJobConsumer := handlers.NewJobConsumer(appconfig,
+		completedJobConsumer := NewJobConsumer(appconfig,
 			pool,
 			sqsClient,
 			s3Store,
