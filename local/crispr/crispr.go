@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	CrisprPythonScript = "scripts/jobs/crispr/crispr.py"
+	CrisprPythonScript = "./scripts/jobs/crispr/crispr.py"
 )
 
 func ProcessFile(ctx context.Context,

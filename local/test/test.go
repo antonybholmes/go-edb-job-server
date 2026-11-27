@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	TestPythonScript = "scripts/jobs/test/test.py"
+	TestPythonScript = "./scripts/jobs/test/test.py"
 )
 
 func ProcessFile(ctx context.Context,

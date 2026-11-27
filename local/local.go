@@ -124,7 +124,7 @@ func (p *LocalFileJobProcessor) ProcessFile(ctx context.Context, job *jobs.Job) 
 	//outputFiles := make([]*jobs.JobFile, len(outputPaths))
 
 	// make zip file name from the word output and the date and time
-	zipFilename := fmt.Sprintf("%s_%s_results_%s.zip", job.Type, job.ID, time.Now().Format("20060102-150405"))
+	zipFilename := fmt.Sprintf("%s_results_%s.zip", job.Type, time.Now().Format("20060102-150405"))
 
 	zipKey := awsjobs.MakeS3JobFileOutputKey(job, zipFilename)
 
@@ -141,44 +141,6 @@ func (p *LocalFileJobProcessor) ProcessFile(ctx context.Context, job *jobs.Job) 
 		zipFilename,
 		fileSizeBytes,
 		nil)
-	//outputFiles = append(outputFiles, outputFile)
-
-	// for _, outputPath := range outputPaths {
-
-	// 	file, stat, err := sysfiles.OpenFile(outputPath)
-
-	// 	if err != nil {
-	// 		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to open local file")
-	// 		return err
-	// 	}
-	// 	defer file.Close()
-
-	// 	// need file size for S3 upload
-	// 	fileSize := stat.Size()
-
-	// 	// get basename e.g. output.txt
-	// 	filename := filepath.Base(outputPath)
-
-	// 	// Make a key to save file
-	// 	key := awsjobs.MakeS3JobFileOutputKey(job, filename)
-
-	// 	// Write the file to S3
-	// 	err = p.s3Store.Upload(ctx, file, key, awssys.ContentTypeTextPlain)
-
-	// 	if err != nil {
-	// 		log.Error().Str("jobId", job.ID).Err(err).Msg("Failed to upload file to S3")
-	// 		return err
-	// 	}
-
-	// 	// make new output job file
-	// 	outputFile := jobs.NewJobFile(jobs.JobFileTypeOutput,
-	// 		key,
-	// 		filename,
-	// 		awssys.ContentTypeTextPlain,
-	// 		fileSize,
-	// 		nil)
-	// 	outputFiles = append(outputFiles, outputFile)
-	// }
 
 	//
 	// Make a new job with the output files and mark it as completed and
